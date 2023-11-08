@@ -213,12 +213,13 @@ def _kustomize_impl(ctx):
             transitive_runfiles.append(img[DefaultInfo].default_runfiles)
 
     template_part = ""
+
     if ctx.attr.substitutions or ctx.attr.deps:
         template_part += "| {} --stamp_info_file={} ".format(ctx.executable._template_engine.path, ctx.file._info_file.path)
         tmpfiles.append(ctx.executable._template_engine)
         tmpfiles.append(ctx.file._info_file)
         for k in ctx.attr.substitutions:
-            template_part += "--variable=%s=%s " % (k, ctx.attr.substitutions[k])
+            template_part += "--variable=%s=%s " % (k, ctx.expand_make_variables("substitutions", ctx.attr.substitutions[k], {}))
         if ctx.attr.start_tag:
             template_part += "--start_tag=%s " % ctx.attr.start_tag
         if ctx.attr.end_tag:
@@ -260,6 +261,9 @@ def _kustomize_impl(ctx):
                     template_part += " --variable={}={}@$(cat {})".format(kpi.legacy_image_name, regrepo, kpi.digestfile.path)
 
         template_part += " "
+
+    for k in ctx.var:
+        template_part += "--variable=%s=%s " % (k, ctx.var[k])
 
     script = ctx.actions.declare_file("%s-kustomize" % ctx.label.name)
     script_content = _script_template.format(
