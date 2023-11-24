@@ -546,7 +546,13 @@ def _kubectl_impl(ctx):
 
     namespace = ctx.attr.namespace
     for inattr in ctx.attr.srcs:
-        for infile in inattr.files.to_list():
+        infiles = inattr.files.to_list()
+
+        # If it has subfiles then it is top level, skip last label generated file aka self
+        if len(ctx.attr.srcs[0][DefaultInfo].files.to_list()) > 1:
+            infiles.pop()
+
+        for infile in infiles:
             statements += "{template_engine} --template={infile} --variable=NAMESPACE={namespace} --stamp_info_file={info_file} | kubectl --cluster=\"{cluster}\" --user=\"{user}\" {kubectl_command} -f -\n".format(
                 infile = infile.short_path,
                 cluster = cluster_arg,

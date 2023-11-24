@@ -30,7 +30,14 @@ def _show_impl(ctx):
 
     kustomize_outputs = []
     script_template = "{template_engine} --template={infile} --variable=NAMESPACE={namespace} --stamp_info_file={info_file}\n"
-    for dep in ctx.attr.src.files.to_list():
+
+    src_files = ctx.attr.src.files.to_list()
+
+    # If it has subfiles then it is top level, skip last label generated file aka self
+    if len(ctx.attr.src[DefaultInfo].files.to_list()) > 1:
+        src_files.pop()
+
+    for dep in src_files:
         kustomize_outputs.append(script_template.format(
             infile = dep.short_path,
             template_engine = ctx.executable._template_engine.short_path,
